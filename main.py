@@ -53,7 +53,6 @@ class HallDialog(QDialog):
         self.btn.setText("ОК")
         self.message_lb = QLabel(self)
         self.message_lb.move(25, 190)
-        self.message_lb.setText("aa")
         self.message_lb.resize(self.message_lb.sizeHint())
 
     def confirm(self):
@@ -77,6 +76,7 @@ class HallDialog(QDialog):
                                 VALUES('{self.name}', {self.theatre_id}, {self.width}, {self.height})""")
                 self.con.commit()
                 self.close()
+
         elif self.mode == DEL:
             if self.name not in names:
                 self.message_lb.setText('Нет зала с таким названием')
@@ -88,6 +88,7 @@ class HallDialog(QDialog):
                 self.close()
         cur.close()
         self.con.close()
+        main_window.collect_info(main_window.theatre_id, main_window.theatre_name)
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -96,16 +97,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.sign_in_window = SignInWidget(self)
         self.sign_in_window.show()
-
+        self.halls_comboBox.currentIndexChanged.connect(self.pp)
         self.con = sql.connect("db\\Theatres.db")
 
         self.new_hall_btn.clicked.connect(self.add_hall)
         self.del_hall_btn.clicked.connect(self.del_hall)
 
+    def pp(self):
+        pass
+
     def collect_info(self, id, name):
-        self.theatre_id = id
+        self.theatre_id  = id
         self.theatre_name = name
         self.theatreName_lb.setText(self.theatre_name)
+        self.halls_comboBox.clear()
         cur = self.con.cursor()
         res = cur.execute(f"""SELECT name from halls
                             WHERE parent_theatre=(SELECT id from theatres
@@ -147,7 +152,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.all_sessions_tb.setRowCount(len(res))
         for i in range(len(res)):
             for j in range(ALL_COLUMN_COUNT):
-                self.all_sessions_tb.setItem(i, j, QTableWidgetItem(f'{res[i][j]}'))
+                if j == 4:
+                    hall_name = cur.execute(f"""SELECT name from halls
+                                            WHERE id={res[i][j]}""").fetchone()[0]
+                    self.all_sessions_tb.setItem(i, j, QTableWidgetItem(f'{hall_name}'))
+                else:
+                    self.all_sessions_tb.setItem(i, j, QTableWidgetItem(f'{res[i][j]}'))
         cur.close()
 
 
