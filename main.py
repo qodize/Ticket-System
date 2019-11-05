@@ -4,12 +4,47 @@ from forms import Ui_MainWindow
 from SignInWidget import SignInWidget
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QLabel, QLineEdit, QPushButton, QTableWidgetItem
 from PyQt5.QtGui import QFont
+from forms.dialogs.UiNewSessionDialog import Ui_NewSessionDialog
 
 
 ADD = 'ADD'
 DEL = 'DEL'
 HALL_COLUMN_COUNT = 6
 ALL_COLUMN_COUNT = 7
+
+
+class NewSessionDialog(QDialog, Ui_NewSessionDialog):
+    def __init__(self, hall_name):
+        super().__init__()
+        self.setupUi(self)
+        self.hall_name = hall_name
+        self.buttonBox.accepted.connect(self.collect_info)
+
+    def collect_info(self):
+        self.date = self.date_edit.text()
+        self.film_name = str(self.film_name_edit.text())
+        self.start_time = self.start_time_edit.text()
+        self.duration = int(self.duration_box.text())
+        self.ticket_price = int(self.price_box.text())
+        print(self.date, self.film_name, self.start_time, self.duration, self.ticket_price)
+        if not self.film_name:
+            self.message_lb.setText('Вы ввели пустое название фильма!')
+        else:
+            con = sql.connect("db\\Theatres.db")
+            cur = con.cursor()
+            hall_id = cur.execute(f"""SELECT id from halls WHERE name like '{self.hall_name}'""").fetchone()[0]
+            free_sits = cur.execute(f"""SELECT height, width from halls WHERE id={hall_id}""").fetchall()[0]
+            free_sits = free_sits[0] * free_sits[1]
+            cur.execute(f"""INSERT INTO Sessions(date, "film name", "start time", duration,
+                                        "hall id", "free sits", "ticket price") 
+                            VALUES ('{self.date}', '{self.film_name}', '{self.start_time}',
+                            {self.duration}, {hall_id}, {free_sits}, {self.ticket_price})""")
+            con.commit()
+            cur.close()
+            con.close()
+            main_window.update_all_sessions_tb()
+            main_window.updatehall()
+            self.close()
 
 
 class HallDialog(QDialog):
@@ -60,9 +95,7 @@ class HallDialog(QDialog):
         cur = self.con.cursor()
         res = cur.execute("""SELECT name from halls""").fetchall()
         names = [str(x[0]) for x in res]
-        print(names)
         self.name = self.name_line.text()
-        print(self.name)
         if self.mode == ADD:
             self.width, self.height = self.wid_line.text(), self.heg_line.text()
             if self.name in names:
@@ -97,14 +130,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.sign_in_window = SignInWidget(self)
         self.sign_in_window.show()
-        self.halls_comboBox.currentIndexChanged.connect(self.pp)
+        self.halls_comboBox.currentIndexChanged.connect(self.updatehall)
         self.con = sql.connect("db\\Theatres.db")
 
         self.new_hall_btn.clicked.connect(self.add_hall)
         self.del_hall_btn.clicked.connect(self.del_hall)
+        self.new_session_btn.clicked.connect(self.add_session)
 
-    def pp(self):
-        pass
+    def add_session(self):
+        self.new_session_dialog = NewSessionDialog(self.current_hall_name)
+        self.new_session_dialog.show()
+
+    def hall_selected(self):
+        self.updatehall()
 
     def collect_info(self, id, name):
         self.theatre_id  = id
@@ -134,7 +172,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.hall_name_lb.setText(self.current_hall_name)
         self.hall_name_lb.resize(self.hall_name_lb.sizeHint())
         cur = self.con.cursor()
-        res = cur.execute(f"""SELECT date, "film id", "start time", duration, "free sits", "ticket price" from Sessions
+        res = cur.execute(f"""SELECT date, "film name", "start time", duration, "free sits", "ticket price" from Sessions
                             WHERE "hall id"=(SELECT id from halls
                                             WHERE name like '{self.current_hall_name}')""").fetchall()
         self.hall_sessions_tb.setRowCount(len(res))
@@ -144,9 +182,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def update_all_sessions_tb(self):
         cur = self.con.cursor()
-        res = cur.execute(f"""SELECT date, "film id", "start time", duration,
+        res = cur.execute(f"""SELECT date, "film name", "start time", duration,
                                     "hall id", "free sits", "ticket price" from Sessions
-                            WHERE "hall id"=(SELECT id from halls
+                            WHERE "hall id" IN (SELECT id from halls
                                         WHERE parent_theatre=(SELECT id from theatres
                                                             WHERE name like '{self.theatre_name}'))""").fetchall()
         self.all_sessions_tb.setRowCount(len(res))
