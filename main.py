@@ -2,15 +2,40 @@ import sys
 import sqlite3 as sql
 from forms import Ui_MainWindow
 from SignInWidget import SignInWidget
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QLabel, QLineEdit, QPushButton, QTableWidgetItem
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, \
+    QLabel, QLineEdit, QPushButton, QTableWidgetItem, QDialogButtonBox
 from PyQt5.QtGui import QFont
 from forms.dialogs.UiNewSessionDialog import Ui_NewSessionDialog
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 
 ADD = 'ADD'
 DEL = 'DEL'
-HALL_COLUMN_COUNT = 6
-ALL_COLUMN_COUNT = 7
+HALL_COLUMN_COUNT = 7
+ALL_COLUMN_COUNT = 8
+
+
+class AreYouShureToDel(QDialog):
+    def __init__(self, MainWindow):
+        super().__init__()
+        self.MainWindow = MainWindow
+        ##setupUi
+        self.setGeometry(400, 400, 381, 210)
+        self.label = QLabel("Вы уверены?", self)
+        self.label.setGeometry(75, 50, 200, 50)
+        font = QtGui.QFont()
+        font.setPointSize(18)
+        self.label.setFont(font)
+        self.buttonBox = QDialogButtonBox(self)
+        self.buttonBox.setGeometry(QtCore.QRect(20, 160, 341, 32))
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        ##
+
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        self.buttonBox.accepted.connect(MainWindow.del_session)
 
 
 class NewSessionDialog(QDialog, Ui_NewSessionDialog):
@@ -130,6 +155,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.sign_in_window = SignInWidget(self)
         self.sign_in_window.show()
+        self.r_u_shure_del_dialog = AreYouShureToDel(self)
+        self.delete_session_btn.clicked.connect(self.r_u_shure_del_dialog.show)
         self.halls_comboBox.currentIndexChanged.connect(self.updatehall)
         self.con = sql.connect("db\\Theatres.db")
 
@@ -141,8 +168,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.new_session_dialog = NewSessionDialog(self.current_hall_name)
         self.new_session_dialog.show()
 
-    def hall_selected(self):
-        self.updatehall()
+    # def hall_selected(self):
+    #     self.updatehall()
 
     def collect_info(self, id, name):
         self.theatre_id  = id
@@ -172,7 +199,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.hall_name_lb.setText(self.current_hall_name)
         self.hall_name_lb.resize(self.hall_name_lb.sizeHint())
         cur = self.con.cursor()
-        res = cur.execute(f"""SELECT date, "film name", "start time", duration, "free sits", "ticket price" from Sessions
+        res = cur.execute(f"""SELECT date, "film name", "start time", duration,
+                                "free sits", "ticket price", id from Sessions
                             WHERE "hall id"=(SELECT id from halls
                                             WHERE name like '{self.current_hall_name}')""").fetchall()
         self.hall_sessions_tb.setRowCount(len(res))
@@ -183,7 +211,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def update_all_sessions_tb(self):
         cur = self.con.cursor()
         res = cur.execute(f"""SELECT date, "film name", "start time", duration,
-                                    "hall id", "free sits", "ticket price" from Sessions
+                                    "hall id", "free sits", "ticket price", id from Sessions
                             WHERE "hall id" IN (SELECT id from halls
                                         WHERE parent_theatre=(SELECT id from theatres
                                                             WHERE name like '{self.theatre_name}'))""").fetchall()
@@ -197,6 +225,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 else:
                     self.all_sessions_tb.setItem(i, j, QTableWidgetItem(f'{res[i][j]}'))
         cur.close()
+
+    def del_session(self):
+        selected = self.hall_sessions_tb.selectedItems()
+        print(selected)
+        if not selected:
+            pass
+        else:
+            session_id = selected[-1].text()
+            print(session_id)
+            cur = self.con.cursor()
+            cur.execute(f"""DELETE from Sessions
+                            WHERE id={session_id}""")
+            self.con.commit()
+            cur.close()
+            self.update_all_sessions_tb()
+            self.updatehall()
 
 
 if __name__ == '__main__':
