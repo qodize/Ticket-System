@@ -15,6 +15,7 @@ HALL_COLUMN_COUNT = 7
 ALL_COLUMN_COUNT = 8
 
 
+
 class AreYouShureToDel(QDialog):
     def __init__(self, MainWindow):
         super().__init__()
@@ -32,18 +33,58 @@ class AreYouShureToDel(QDialog):
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         ##
-
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
         self.buttonBox.accepted.connect(MainWindow.del_session)
 
 
-class NewSessionDialog(QDialog, Ui_NewSessionDialog):
-    def __init__(self, hall_name):
+class SessionDialog(QDialog, Ui_NewSessionDialog):
+    def __init__(self, hall_name, items=None):
         super().__init__()
         self.setupUi(self)
-        self.hall_name = hall_name
-        self.buttonBox.accepted.connect(self.collect_info)
+        self.show()
+        if items is None:
+            self.hall_name = hall_name
+            self.buttonBox.accepted.connect(self.add_session)
+        else:
+            if not items:
+                self.reject()
+            else:
+                date = items[0].text()  # yyyy.mm.dd
+                year, month, day = [int(x) for x in date.split('.')]
+                self.date = QtCore.QDate(year, month, day)
+
+                self.film_name = items[1].text()
+
+                time = items[2].text()  # hh.mm
+                hours, mins = [int(x) for x in time.split(':')]
+                self.start_time = QtCore.QTime(hours, mins)
+
+                self.duration = int(items[3].text())
+                self.free_sits = int(items[4].text())
+                self.ticket_price = int(items[5].text())
+                self.session_id = int(items[6].text())
+
+                self.set_info()
+                self.buttonBox.accepted.connect(self.update_session)
+
+    def update_session(self):
+        self.collect_info()
+        con = sql.connect('db\\Theatres.db')
+        cur = con.cursor()
+        cur.execute(f"""UPDATE Sessions
+                        SET date='{self.date}',
+                        "film name"='{self.film_name}',
+                        "start time"='{self.start_time}',
+                        duration={self.duration},
+                        "ticket price"={self.ticket_price}
+                        WHERE id={self.session_id}""")
+        con.commit()
+        cur.close()
+        con.close()
+        main_window.update_all_sessions_tb()
+        main_window.updatehall()
+        self.close()
 
     def collect_info(self):
         self.date = self.date_edit.text()
@@ -51,7 +92,17 @@ class NewSessionDialog(QDialog, Ui_NewSessionDialog):
         self.start_time = self.start_time_edit.text()
         self.duration = int(self.duration_box.text())
         self.ticket_price = int(self.price_box.text())
-        print(self.date, self.film_name, self.start_time, self.duration, self.ticket_price)
+
+    def set_info(self):
+        self.date_edit.setDate(self.date)
+        self.film_name_edit.setText(self.film_name)
+        self.start_time_edit.setTime(self.start_time)
+        self.duration_box.setValue(self.duration)
+        self.price_box.setValue(self.ticket_price)
+
+    def add_session(self):
+        self.collect_info()
+        # print(self.date, self.film_name, self.start_time, self.duration, self.ticket_price)
         if not self.film_name:
             self.message_lb.setText('Вы ввели пустое название фильма!')
         else:
@@ -118,7 +169,8 @@ class HallDialog(QDialog):
     def confirm(self):
         self.con = sql.connect("db\\Theatres.db")
         cur = self.con.cursor()
-        res = cur.execute("""SELECT name from halls""").fetchall()
+        res = cur.execute(f"""SELECT name from halls
+                             WHERE parent_theatre={self.theatre_id}""").fetchall()
         names = [str(x[0]) for x in res]
         self.name = self.name_line.text()
         if self.mode == ADD:
@@ -156,20 +208,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.sign_in_window = SignInWidget(self)
         self.sign_in_window.show()
         self.r_u_shure_del_dialog = AreYouShureToDel(self)
+
+        self.new_session_btn.clicked.connect(self.add_session)
         self.delete_session_btn.clicked.connect(self.r_u_shure_del_dialog.show)
+        self.edit_session_btn.clicked.connect(self.edit_session)
+
         self.halls_comboBox.currentIndexChanged.connect(self.updatehall)
         self.con = sql.connect("db\\Theatres.db")
 
         self.new_hall_btn.clicked.connect(self.add_hall)
         self.del_hall_btn.clicked.connect(self.del_hall)
-        self.new_session_btn.clicked.connect(self.add_session)
 
     def add_session(self):
-        self.new_session_dialog = NewSessionDialog(self.current_hall_name)
+        self.new_session_dialog = SessionDialog(self.current_hall_name)
         self.new_session_dialog.show()
 
-    # def hall_selected(self):
-    #     self.updatehall()
+    def edit_session(self):
+        items = self.hall_sessions_tb.selectedItems()
+        self.edit_session_dialog = SessionDialog(self.current_hall_name, items)
 
     def collect_info(self, id, name):
         self.theatre_id  = id
@@ -228,12 +284,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def del_session(self):
         selected = self.hall_sessions_tb.selectedItems()
-        print(selected)
         if not selected:
             pass
         else:
             session_id = selected[-1].text()
-            print(session_id)
             cur = self.con.cursor()
             cur.execute(f"""DELETE from Sessions
                             WHERE id={session_id}""")
