@@ -3,9 +3,10 @@ import sqlite3 as sql
 from forms import Ui_MainWindow
 from SignInWidget import SignInWidget
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, \
-    QLabel, QLineEdit, QPushButton, QTableWidgetItem, QDialogButtonBox
+    QLabel, QLineEdit, QPushButton, QTableWidgetItem, QDialogButtonBox, QWidget
 from PyQt5.QtGui import QFont
 from forms.dialogs.UiNewSessionDialog import Ui_NewSessionDialog
+from forms.windows.UiSellWidget import Ui_SellWidget
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 
@@ -14,6 +15,22 @@ DEL = 'DEL'
 HALL_COLUMN_COUNT = 7
 ALL_COLUMN_COUNT = 8
 
+
+class SellTicket(QWidget, Ui_SellWidget):
+    def __init__(self, items):
+        super().__init__()
+        self.setupUi(self)
+
+        self.date, self.film_name, self.start_time,\
+        self.duration, self.hall, self.free_sits, self.ticket_price,\
+        self.id = [item.text() for item in items]
+        self.set_info()
+
+    def set_info(self):
+        self.film_name_lb.setText(self.film_name)
+        self.date_lb.setText(self.date)
+        self.time_lb.setText(self.start_time)
+        self.hall_number_lb.setText(f"Зал {self.hall}")
 
 
 class AreYouShureToDel(QDialog):
@@ -45,6 +62,7 @@ class SessionDialog(QDialog, Ui_NewSessionDialog):
         self.show()
         if items is None:
             self.hall_name = hall_name
+            self.date_edit.setDate(QtCore.QDate.currentDate())
             self.buttonBox.accepted.connect(self.add_session)
         else:
             if not items:
@@ -218,6 +236,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.new_hall_btn.clicked.connect(self.add_hall)
         self.del_hall_btn.clicked.connect(self.del_hall)
+        self.sell_tickets_btn.clicked.connect(self.sell_ticket)
 
     def add_session(self):
         self.new_session_dialog = SessionDialog(self.current_hall_name)
@@ -295,6 +314,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             cur.close()
             self.update_all_sessions_tb()
             self.updatehall()
+
+    def sell_ticket(self):
+        items = self.all_sessions_tb.selectedItems()
+        if items:
+            self.sell_ticket_widget = SellTicket(items)
+            self.sell_ticket_widget.show()
+        else:
+            self.message_lb.setText('Выберите сеанс')
 
 
 if __name__ == '__main__':

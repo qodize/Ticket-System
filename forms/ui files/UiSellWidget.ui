@@ -36,7 +36,7 @@
     <rect>
      <x>30</x>
      <y>140</y>
-     <width>151</width>
+     <width>141</width>
      <height>21</height>
     </rect>
    </property>
@@ -139,29 +139,6 @@
     <string>Дата: </string>
    </property>
   </widget>
-  <widget class="QScrollArea" name="hall_plan_sa">
-   <property name="geometry">
-    <rect>
-     <x>180</x>
-     <y>51</y>
-     <width>500</width>
-     <height>450</height>
-    </rect>
-   </property>
-   <property name="widgetResizable">
-    <bool>true</bool>
-   </property>
-   <widget class="QWidget" name="scrollAreaWidgetContents">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>498</width>
-      <height>448</height>
-     </rect>
-    </property>
-   </widget>
-  </widget>
   <widget class="QLabel" name="hall_number_lb">
    <property name="geometry">
     <rect>
@@ -178,6 +155,29 @@
    </property>
    <property name="text">
     <string>Зал:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="chosen_seats_lb_2">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>170</y>
+     <width>141</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QTableWidget" name="seats_table">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>50</y>
+     <width>511</width>
+     <height>451</height>
+    </rect>
    </property>
   </widget>
  </widget>

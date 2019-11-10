@@ -92,7 +92,7 @@ class AdminPassDialog(QDialog, Ui_AdminPassDialog):
                                          WHERE name like '{self.theatre}'""").fetchone()[0])
         entered_password = self.password_line.text()
         self.password_line.setText('')
-        print(self.password, entered_password)
+        # print(self.password, entered_password)
         #  если ввели пустой пароль, выводим ошибку в поле сообщения
         if not entered_password:
             self.message_lb.setText("Ошибка. Введен пустой пароль")
@@ -161,6 +161,18 @@ class SignInWidget(QWidget, Ui_SignInWidget):
         pass
         cur = self.con.cursor()
         theatre = self.theatre_name
+        theatre_id = cur.execute(f"""SELECT id from theatres
+                            WHERE name like '{self.theatre_name}'""").fetchone()[0]
+        # удаляем сессии этого кинотеатра
+        cur.execute(f"""DELETE from Sessions
+                        WHERE "hall id" IN (SELECT id from halls
+                                            WHERE parent_theatre = {theatre_id})""")
+        self.con.commit()
+        # удаляем залы этого кинотеатра
+        cur.execute(f"""DELETE from halls
+                        WHERE parent_theatre = {theatre_id}""")
+        self.con.commit()
+        # удаляем сам кинотеатр
         cur.execute(f"""DELETE from theatres
                         WHERE name like '{theatre}'""")
         self.fill_theatres_table()
