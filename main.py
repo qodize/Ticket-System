@@ -20,17 +20,56 @@ class SellTicket(QWidget, Ui_SellWidget):
     def __init__(self, items):
         super().__init__()
         self.setupUi(self)
+        self.con = sql.connect("db\\Theatres.db")
 
         self.date, self.film_name, self.start_time,\
-        self.duration, self.hall, self.free_sits, self.ticket_price,\
+        self.duration, self.hall_name, self.free_sits, self.ticket_price,\
         self.id = [item.text() for item in items]
         self.set_info()
+
+        cur = self.con.cursor()
+        self.hall_id = cur.execute(f"""SELECT id from halls
+                                        WHERE name like '{self.hall_name}'""").fetchone()[0]
+        column_count, row_count = cur.execute(f"""SELECT width, height from halls
+                                        WHERE id={self.hall_id}""").fetchone()
+        self.seats_table.setColumnCount(column_count)
+        self.seats_table.setRowCount(row_count)
+        self.booked_seats = cur.execute(f"""SELECT row, column from booked_seats
+                                                WHERE session_id={self.id}""").fetchall()
+        print(self.booked_seats)
+        for i in range(row_count):
+            for j in range(column_count):
+                if (i, j) in self.booked_seats:
+                    url = "C:\\Users\\len0v\\PycharmProjects\\Ticket System\\icons\\booked_seat.png"
+                else:
+                    url = "C:\\Users\\len0v\\PycharmProjects\\Ticket System\\icons\\default_seat.png"
+                icon = QtGui.QIcon(QtGui.QPixmap(QtGui.QPixmap(url).scaled(45, 45, QtCore.Qt.IgnoreAspectRatio)))
+                item = QTableWidgetItem(icon, "")
+                self.seats_table.setItem(i, j, item)
+        self.seats_table.itemSelectionChanged.connect(self.update_chosen_seats)
 
     def set_info(self):
         self.film_name_lb.setText(self.film_name)
         self.date_lb.setText(self.date)
         self.time_lb.setText(self.start_time)
-        self.hall_number_lb.setText(f"Зал {self.hall}")
+        self.hall_name_lb.setText(f"Зал {self.hall_name}")
+
+    def update_chosen_seats(self):
+        items = self.seats_table.selectedItems()
+        numbers = sorted([(item.row() , item.column()) for item in items])
+        self.chosen_seats_pte.clear()
+        delta = 0
+        for i in range(len(numbers)):
+            print((numbers[i][0], numbers[i][1]))
+            if not (numbers[i][0], numbers[i][1]) in self.booked_seats:
+                self.chosen_seats_pte.appendPlainText(f"Ряд {numbers[i][0] + 1}, Место {numbers[i][1] + 1}\n")
+            else:
+                delta += 1
+
+        for row, col in self.booked_seats:
+            self.seats_table.item(row, col).setSelected(False)
+
+        self.total_cost_lb.setText("Итого: " + str(int(self.ticket_price) * (len(numbers) - delta)))
 
 
 class AreYouShureToDel(QDialog):
@@ -163,9 +202,10 @@ class HallDialog(QDialog):
         self.name_line.resize(250, 25)
         if self.mode == ADD:
             self.lb2 = QLabel(self)
-            self.lb2.move(60, 70)
+            self.lb2.move(15, 70)
+            font.setPointSize(10)
             self.lb2.setFont(font)
-            self.lb2.setText("Ширина        Высота")
+            self.lb2.setText("Кол-во сидений в ряду |   Кол-во рядов")
             self.lb2.resize(self.lb2.sizeHint())
             self.wid_line = QLineEdit(self)
             self.wid_line.move(40, 100)
@@ -317,11 +357,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def sell_ticket(self):
         items = self.all_sessions_tb.selectedItems()
-        if items:
+        if len(items) > ALL_COLUMN_COUNT:
+            self.message_lb.setText('Выберите только один сеанс.')
+            self.message_lb.resize(self.message_lb.sizeHint())
+        elif items:
             self.sell_ticket_widget = SellTicket(items)
             self.sell_ticket_widget.show()
         else:
-            self.message_lb.setText('Выберите сеанс')
+            self.message_lb.setText('Выберите сеанс.')
+            self.message_lb.resize(self.message_lb.sizeHint())
 
 
 if __name__ == '__main__':

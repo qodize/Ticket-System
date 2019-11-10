@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>689</width>
-    <height>515</height>
+    <width>704</width>
+    <height>562</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,10 +52,10 @@
   <widget class="QLabel" name="total_cost_lb">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>200</y>
-     <width>131</width>
-     <height>16</height>
+     <x>10</x>
+     <y>460</y>
+     <width>151</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="font">
@@ -88,8 +88,8 @@
   <widget class="QPushButton" name="sell_tickets_btn">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>230</y>
+     <x>20</x>
+     <y>500</y>
      <width>131</width>
      <height>41</height>
     </rect>
@@ -139,7 +139,7 @@
     <string>Дата: </string>
    </property>
   </widget>
-  <widget class="QLabel" name="hall_number_lb">
+  <widget class="QLabel" name="hall_name_lb">
    <property name="geometry">
     <rect>
      <x>30</x>
@@ -157,27 +157,83 @@
     <string>Зал:</string>
    </property>
   </widget>
-  <widget class="QLabel" name="chosen_seats_lb_2">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>170</y>
-     <width>141</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
   <widget class="QTableWidget" name="seats_table">
    <property name="geometry">
     <rect>
-     <x>170</x>
-     <y>50</y>
-     <width>511</width>
-     <height>451</height>
+     <x>160</x>
+     <y>10</y>
+     <width>541</width>
+     <height>541</height>
     </rect>
+   </property>
+   <property name="baseSize">
+    <size>
+     <width>0</width>
+     <height>10</height>
+    </size>
+   </property>
+   <property name="editTriggers">
+    <set>QAbstractItemView::NoEditTriggers</set>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>50</width>
+     <height>50</height>
+    </size>
+   </property>
+   <property name="showGrid">
+    <bool>false</bool>
+   </property>
+   <property name="rowCount">
+    <number>10</number>
+   </property>
+   <property name="columnCount">
+    <number>10</number>
+   </property>
+   <attribute name="horizontalHeaderMinimumSectionSize">
+    <number>40</number>
+   </attribute>
+   <attribute name="horizontalHeaderDefaultSectionSize">
+    <number>50</number>
+   </attribute>
+   <attribute name="verticalHeaderMinimumSectionSize">
+    <number>40</number>
+   </attribute>
+   <attribute name="verticalHeaderDefaultSectionSize">
+    <number>50</number>
+   </attribute>
+   <row/>
+   <row/>
+   <row/>
+   <row/>
+   <row/>
+   <row/>
+   <row/>
+   <row/>
+   <row/>
+   <row/>
+   <column/>
+   <column/>
+   <column/>
+   <column/>
+   <column/>
+   <column/>
+   <column/>
+   <column/>
+   <column/>
+   <column/>
+  </widget>
+  <widget class="QPlainTextEdit" name="chosen_seats_pte">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>170</y>
+     <width>141</width>
+     <height>281</height>
+    </rect>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
    </property>
   </widget>
  </widget>
