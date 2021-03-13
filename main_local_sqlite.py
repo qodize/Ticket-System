@@ -9,7 +9,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, \
     QLabel, QLineEdit, QPushButton, QTableWidgetItem, QDialogButtonBox, QWidget
 
-from SignInWidget import SignInWidget
+from SignInWidget_local_sqlite import SignInWidget
 from forms import Ui_MainWindow
 from forms.dialogs.UiNewSessionDialog import Ui_NewSessionDialog
 from forms.windows.UiSellWidget import Ui_SellWidget
