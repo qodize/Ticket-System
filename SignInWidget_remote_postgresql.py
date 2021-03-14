@@ -1,7 +1,6 @@
 import sys
 from forms import Ui_SignInWidget, Ui_AdminPassDialog, Ui_OwnerPassDialog, Ui_NewTheatreDialog
 from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QTableWidgetItem, QAbstractItemView
-import sqlite3 as sql
 import psycopg2 as psql
 from db import db_credentials as db_cred
 
@@ -110,7 +109,6 @@ class AdminPassDialog(QDialog, Ui_AdminPassDialog):
             self.message_lb.setText("Пароль неверный. Введите заново")
             self.message_lb.resize(self.message_lb.sizeHint())
         else:
-            print('complete')
             self.func()
             self.close()
 
